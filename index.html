@@ -308,7 +308,7 @@
         </div>
       </div>
       <div class="mini-cards">
-        <div class="scard mini total"><div class="val" id="cTotal">40</div><div class="lbl">Total Entitas</div></div>
+        <div class="scard mini total"><div class="val" id="cTotal">42</div><div class="lbl">Total Entitas</div></div>
         <div class="scard mini ok"><div class="val" id="cOk">0</div><div class="lbl">✅ Sesuai</div></div>
         <div class="scard mini warn"><div class="val" id="cWarn">0</div><div class="lbl">⚠️ Beda / Kurang</div></div>
       </div>
@@ -426,10 +426,11 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFr2GqxZe0N3thy0zg0ymMRRmQmY8NMkoErrGHhVI_eqQ8rLkuTw0QuxloTP1wLa9Plg/exec";
 
 // ============================================================
-// DATA JADWAL (40 entitas non-KFC, Senin-Minggu)
+// DATA JADWAL (42 entitas non-KFC, Senin-Minggu)
 // jadwal index: 0=Senin,1=Selasa,2=Rabu,3=Kamis,4=Jumat,5=Sabtu,6=Minggu
 // ============================================================
 const JADWAL = [
+  {area:"Area Makassar Kartini",kode:"15200A",nama:"Kantor Area Makassar Kartini",qty:3,jadwal:["Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa"]},
   {area:"Area Makassar Kartini",kode:"15200",nama:"Makassar Kartini",qty:3,jadwal:["Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa"]},
   {area:"Area Makassar Kartini",kode:"15201",nama:"Makassar Sulawesi",qty:3,jadwal:["Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa"]},
   {area:"Area Makassar Kartini",kode:"15202",nama:"Makassar Cokroaminoto",qty:3,jadwal:["Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang"]},
@@ -444,6 +445,7 @@ const JADWAL = [
   {area:"Area Makassar Kartini",kode:"15250",nama:"Makassar Monginsidi",qty:3,jadwal:["Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang"]},
   {area:"Area Makassar Kartini",kode:"15251",nama:"Makassar CPI",qty:3,jadwal:["Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi"]},
   {area:"Area Makassar Kartini",kode:"15252",nama:"Makassar Latimojong",qty:3,jadwal:["Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa"]},
+  {area:"Area Makassar Ratulangi",kode:"17400A",nama:"Kantor Area Makassar Ratulangi",qty:3,jadwal:["Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng"]},
   {area:"Area Makassar Ratulangi",kode:"17400",nama:"Makassar Sam Ratulangi",qty:3,jadwal:["Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng"]},
   {area:"Area Makassar Ratulangi",kode:"17401",nama:"Makassar Panakkukang",qty:3,jadwal:["Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed"]},
   {area:"Area Makassar Ratulangi",kode:"17402",nama:"Makassar Hertasning",qty:3,jadwal:["Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed"]},
