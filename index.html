@@ -160,7 +160,16 @@
       <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
         <button class="btn btn-blue" onclick="copyWording(this)">📋 Salin</button>
         <button class="btn" style="background:#25D366; color:#fff; border:none;" onclick="sendWA()">💬 Kirim ke WhatsApp</button>
+        <button class="btn" style="background:#0b5cab; color:#fff; border:none;" onclick="genWordingImage()">🖼️ Gambar Tabel</button>
         <button class="pill" onclick="document.getElementById('wordingWrap').style.display='none'">Tutup</button>
+      </div>
+      <div id="imgWrap" style="display:none; margin-top:12px;">
+        <img id="wordingImg" style="max-width:100%; border:1px solid #d7e3f0; border-radius:10px; box-shadow:0 2px 8px rgba(10,40,80,0.08);">
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <button class="btn btn-blue" onclick="copyImage(this)">📋 Salin Gambar</button>
+          <button class="btn" style="background:#5a6b80; color:#fff; border:none;" onclick="downloadImage()">⬇️ Download PNG</button>
+        </div>
+        <div style="font-size:12px; color:#5a6b80; margin-top:6px;">💡 Klik "Salin Gambar" lalu paste (Ctrl+V) langsung di chat WhatsApp.</div>
       </div>
     </div>
 
@@ -439,7 +448,9 @@ function loadData() {
 function renderDashboard(submissions, date) {
   var dayIdx = dateToDayIndex(date);
   lastRows = [];
+  lastImgBlob = null;
   document.getElementById("wordingWrap").style.display = "none";
+  document.getElementById("imgWrap").style.display = "none";
 
   // Build submission map: JADWAL index → [{merchant, nip, nama}]
   var subMap = {};
@@ -528,18 +539,28 @@ function formatTanggalID(d) {
   return p[2] + "/" + p[1] + "/" + p[0];
 }
 
-function genWording() {
-  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
+function buildMissData() {
   var date = document.getElementById("dateInput").value;
   var dayName = DAYS[new Date(date + "T00:00:00").getDay()];
   var areaLabel = {
     all: "Semua Area", kartini: "Area Makassar Kartini", ratulangi: "Area Makassar Ratulangi",
     r10: "Unit Region X", r10ho: "Unit Region X (Under HO)"
   }[curAreaFilter];
-
   var miss = lastRows.filter(function(r){
     return r.status === "miss" && (curAreaFilter === "all" || r.areaKey === curAreaFilter);
   });
+  var groups = {}, order = [];
+  miss.forEach(function(r){
+    if (!groups[r.areaShort]) { groups[r.areaShort] = []; order.push(r.areaShort); }
+    groups[r.areaShort].push(r);
+  });
+  return { date: date, dayName: dayName, areaLabel: areaLabel, miss: miss, groups: groups, order: order };
+}
+
+function genWording() {
+  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
+  var d = buildMissData();
+  var date = d.date, dayName = d.dayName, areaLabel = d.areaLabel, miss = d.miss;
 
   var text = "*MONITORING PARTISIPASI LIVIN' FOOD*\n" +
              "Region X / Sulawesi & Maluku\n" +
@@ -549,14 +570,9 @@ function genWording() {
     text += "Seluruh unit/cabang (" + areaLabel + ") sudah melakukan transaksi Livin' Food hari ini. Terima kasih! 🙏";
   } else {
     text += "Mohon perhatian, berikut unit/cabang (" + areaLabel + ") yang *BELUM* melakukan transaksi Livin' Food hari ini:\n";
-    var groups = {}, order = [];
-    miss.forEach(function(r){
-      if (!groups[r.areaShort]) { groups[r.areaShort] = []; order.push(r.areaShort); }
-      groups[r.areaShort].push(r);
-    });
-    order.forEach(function(g){
-      text += "\n*" + g + "* (" + groups[g].length + ")\n";
-      groups[g].forEach(function(r, i){
+    d.order.forEach(function(g){
+      text += "\n*" + g + "* (" + d.groups[g].length + ")\n";
+      d.groups[g].forEach(function(r, i){
         var kodePrefix = (r.kode === "R10" || r.kode === "R10HO") ? "" : r.kode + " - ";
         text += (i + 1) + ". " + kodePrefix + r.nama + " → " + r.sched + " (target " + r.qty + "x)\n";
       });
@@ -586,6 +602,118 @@ function copyWording(btn) {
 function sendWA() {
   var t = document.getElementById("wordingText").value;
   window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank");
+}
+
+// ============================================================
+// GAMBAR TABEL (PNG) UNTUK WHATSAPP
+// ============================================================
+var lastImgBlob = null;
+
+function fitText_(ctx, txt, maxW) {
+  if (ctx.measureText(txt).width <= maxW) return txt;
+  while (txt.length > 1 && ctx.measureText(txt + "…").width > maxW) txt = txt.slice(0, -1);
+  return txt + "…";
+}
+
+function genWordingImage() {
+  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
+  var d = buildMissData();
+  var W = 900, pad = 24, rowH = 34, grpH = 38, headH = 96, colHeadH = 34, footH = 44;
+  var nRows = d.miss.length, nGrp = d.order.length;
+  var bodyH = nRows ? (colHeadH + nGrp * grpH + nRows * rowH) : 50;
+  var H = headH + bodyH + footH;
+  var scale = 2;
+  var cv = document.createElement("canvas");
+  cv.width = W * scale; cv.height = H * scale;
+  var ctx = cv.getContext("2d");
+  ctx.scale(scale, scale);
+
+  // Latar
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+  ctx.textBaseline = "middle";
+
+  // Judul
+  ctx.fillStyle = "#0b3a6e"; ctx.font = "bold 20px Arial";
+  ctx.fillText("MONITORING PARTISIPASI LIVIN' FOOD", pad, 28);
+  ctx.font = "13px Arial"; ctx.fillStyle = "#3d5a80";
+  ctx.fillText("Region X / Sulawesi & Maluku — " + d.dayName + ", " + formatTanggalID(d.date), pad, 52);
+  ctx.font = "bold 14px Arial"; ctx.fillStyle = nRows ? "#c0392b" : "#1e8e4e";
+  ctx.fillText(nRows ? ("BELUM TRANSAKSI (" + d.areaLabel + "): " + nRows + " entitas")
+                     : ("Seluruh unit/cabang (" + d.areaLabel + ") sudah transaksi hari ini"), pad, 78);
+
+  var y = headH;
+  var tblW = W - pad * 2;
+  // Kolom: No, Kode, Nama, Merchant Wajib, Target
+  var cols = [40, 80, 468, 204, 60];
+  var colX = [pad];
+  for (var c = 0; c < cols.length; c++) colX.push(colX[c] + cols[c]);
+
+  if (nRows) {
+    // Header kolom
+    ctx.fillStyle = "#eef4fb"; ctx.fillRect(pad, y, tblW, colHeadH);
+    ctx.strokeStyle = "#d7e3f0"; ctx.strokeRect(pad, y, tblW, colHeadH);
+    ctx.fillStyle = "#0b3a6e"; ctx.font = "bold 12px Arial";
+    var heads = ["No", "Kode", "Nama Cabang / Unit", "Merchant Wajib", "Target"];
+    heads.forEach(function(h, i){ ctx.fillText(h, colX[i] + 8, y + colHeadH / 2); });
+    y += colHeadH;
+
+    d.order.forEach(function(g){
+      // Bar grup
+      ctx.fillStyle = "#1F4E79"; ctx.fillRect(pad, y, tblW, grpH);
+      ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Arial";
+      ctx.fillText(g + "  (" + d.groups[g].length + " entitas)", pad + 10, y + grpH / 2);
+      y += grpH;
+
+      d.groups[g].forEach(function(r, i){
+        ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#f6f9fd";
+        ctx.fillRect(pad, y, tblW, rowH);
+        ctx.strokeStyle = "#e3ecf5"; ctx.strokeRect(pad, y, tblW, rowH);
+        ctx.font = "12px Arial"; ctx.fillStyle = "#33475e";
+        var kode = (r.kode === "R10" || r.kode === "R10HO") ? "—" : r.kode;
+        ctx.fillText(String(i + 1), colX[0] + 8, y + rowH / 2);
+        ctx.fillText(kode, colX[1] + 8, y + rowH / 2);
+        ctx.fillText(fitText_(ctx, r.nama, cols[2] - 16), colX[2] + 8, y + rowH / 2);
+        ctx.fillText(fitText_(ctx, r.sched, cols[3] - 16), colX[3] + 8, y + rowH / 2);
+        ctx.fillText(r.qty + "x", colX[4] + 8, y + rowH / 2);
+        y += rowH;
+      });
+    });
+  }
+
+  // Footer
+  ctx.font = "italic 11px Arial"; ctx.fillStyle = "#8296ac";
+  ctx.fillText("Digenerate otomatis dari Dashboard Monitoring Livin' Food — " + new Date().toLocaleString("id-ID"), pad, H - footH / 2);
+
+  cv.toBlob(function(blob){
+    lastImgBlob = blob;
+    document.getElementById("wordingImg").src = URL.createObjectURL(blob);
+    document.getElementById("imgWrap").style.display = "block";
+    document.getElementById("wordingWrap").style.display = "block";
+    document.getElementById("imgWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, "image/png");
+}
+
+function copyImage(btn) {
+  if (!lastImgBlob) return;
+  if (navigator.clipboard && window.ClipboardItem) {
+    navigator.clipboard.write([new ClipboardItem({ "image/png": lastImgBlob })]).then(function(){
+      var old = btn.textContent;
+      btn.textContent = "✅ Tersalin!";
+      setTimeout(function(){ btn.textContent = old; }, 2000);
+    }).catch(function(){
+      alert("Gagal menyalin gambar. Gunakan tombol Download PNG lalu kirim manual.");
+    });
+  } else {
+    alert("Browser tidak mendukung salin gambar. Gunakan tombol Download PNG.");
+  }
+}
+
+function downloadImage() {
+  if (!lastImgBlob) return;
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(lastImgBlob);
+  a.download = "monitoring_livinfood_" + document.getElementById("dateInput").value + ".png";
+  a.click();
 }
 
 // ============================================================
