@@ -557,28 +557,64 @@ function buildMissData() {
   return { date: date, dayName: dayName, areaLabel: areaLabel, miss: miss, groups: groups, order: order };
 }
 
+var FORM_LINK = "https://bit.ly/R10-LivinFood-Partisipation";
+
 function genWording() {
   if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
-  var d = buildMissData();
-  var date = d.date, dayName = d.dayName, areaLabel = d.areaLabel, miss = d.miss;
+  var date = document.getElementById("dateInput").value;
+  var dayName = DAYS[new Date(date + "T00:00:00").getDay()];
+  var now = new Date();
+  var pukul = String(now.getHours()).padStart(2, "0") + "." + String(now.getMinutes()).padStart(2, "0");
 
-  var text = "*MONITORING PARTISIPASI LIVIN' FOOD*\n" +
-             "Region X / Sulawesi & Maluku\n" +
-             dayName + ", " + formatTanggalID(date) + "\n\n";
+  var headerLabel = {
+    all: "Region X / Sulawesi & Maluku", kartini: "Area Makassar Kartini",
+    ratulangi: "Area Makassar Ratulangi", r10: "Unit Region X / Sulawesi & Maluku",
+    r10ho: "Unit Region X (Under HO)"
+  }[curAreaFilter];
+  var sectionTitle = {
+    kartini: "AREA MAKASSAR KARTINI", ratulangi: "AREA MAKASSAR RATULANGI",
+    r10: "REGION X / SULAWESI & MALUKU", r10ho: "REGION X / UNDER HO"
+  };
 
-  if (!miss.length) {
-    text += "Seluruh unit/cabang (" + areaLabel + ") sudah melakukan transaksi Livin' Food hari ini. Terima kasih! 🙏";
-  } else {
-    text += "Mohon perhatian, berikut unit/cabang (" + areaLabel + ") yang *BELUM* melakukan transaksi Livin' Food hari ini:\n";
-    d.order.forEach(function(g){
-      text += "\n*" + g + "* (" + d.groups[g].length + ")\n";
-      d.groups[g].forEach(function(r, i){
-        var kodePrefix = (r.kode === "R10" || r.kode === "R10HO") ? "" : r.kode + " - ";
-        text += (i + 1) + ". " + kodePrefix + r.nama + " → " + r.sched + " (target " + r.qty + "x)\n";
+  var rows = lastRows.filter(function(r){
+    return curAreaFilter === "all" || r.areaKey === curAreaFilter;
+  });
+
+  var SEP = "==========================";
+  var text = "*UPDATE TRANSAKSI LIVIN' FOOD*\n" +
+             headerLabel + "\n" +
+             "Hari: " + dayName + "\n" +
+             "Pukul : " + pukul + " Wita\n";
+
+  var sectionOrder = ["kartini", "ratulangi", "r10", "r10ho"].filter(function(k){
+    return rows.some(function(r){ return r.areaKey === k; });
+  });
+
+  var firstSection = true;
+  sectionOrder.forEach(function(k){
+    text += SEP + "\n" + sectionTitle[k] + "\n" + SEP + "\n";
+    if (firstSection) {
+      text += "Link pelaporan Livin' Food\n" + FORM_LINK + "\n";
+      firstSection = false;
+    }
+    var secRows = rows.filter(function(r){ return r.areaKey === k; });
+    var mOrder = [], mGroups = {};
+    secRows.forEach(function(r){
+      if (!mGroups[r.sched]) { mGroups[r.sched] = []; mOrder.push(r.sched); }
+      mGroups[r.sched].push(r);
+    });
+    mOrder.forEach(function(m){
+      text += "Merchant: " + m + "\n";
+      mGroups[m].forEach(function(r){
+        var mark = r.status === "miss" ? "❌"
+                 : r.submitCount + "/" + r.qty + (r.status === "ok" ? " ✅" : " ⚠️");
+        var nm = (k === "kartini" || k === "ratulangi") ? r.kode + " " + r.nama : r.nama;
+        text += "- " + nm + " - " + mark + "\n";
       });
     });
-    text += "\nMohon segera melakukan transaksi di merchant sesuai jadwal dan upload bukti pada form partisipasi. Terima kasih 🙏";
-  }
+  });
+
+  text += "Terima kasih atas kerja samanya.";
 
   document.getElementById("wordingText").value = text;
   document.getElementById("wordingWrap").style.display = "block";
