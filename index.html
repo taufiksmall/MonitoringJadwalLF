@@ -151,6 +151,17 @@
       <button class="pill" onclick="setArea('ratulangi',this)">Mks Ratulangi</button>
       <button class="pill" onclick="setArea('r10',this)">R10</button>
       <button class="pill" onclick="setArea('r10ho',this)">R10HO</button>
+      <button class="pill" onclick="genWording()" style="border-color:#25D366; color:#128C7E; font-weight:700;">📱 Wording WA</button>
+    </div>
+
+    <div id="wordingWrap" style="display:none; margin:12px 0; background:#fff; border:1px solid #d7e3f0; border-radius:12px; padding:14px;">
+      <div style="font-weight:700; font-size:13px; color:#0b3a6e; margin-bottom:8px;">Wording siap kirim (bisa diedit dulu):</div>
+      <textarea id="wordingText" style="width:100%; min-height:240px; box-sizing:border-box; padding:12px; border:1px solid #d7e3f0; border-radius:10px; font-size:13px; line-height:1.5; font-family:inherit; resize:vertical;"></textarea>
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <button class="btn btn-blue" onclick="copyWording(this)">📋 Salin</button>
+        <button class="btn" style="background:#25D366; color:#fff; border:none;" onclick="sendWA()">💬 Kirim ke WhatsApp</button>
+        <button class="pill" onclick="document.getElementById('wordingWrap').style.display='none'">Tutup</button>
+      </div>
     </div>
 
     <div id="errMsg"></div>
@@ -342,6 +353,7 @@ function switchTab(tab) {
 // ============================================================
 var curStatusFilter = "all";
 var curAreaFilter = "all";
+var lastRows = []; // hasil render terakhir, dipakai untuk generate wording WA
 
 function setFilter(f, el) {
   curStatusFilter = f;
@@ -426,6 +438,8 @@ function loadData() {
 // ============================================================
 function renderDashboard(submissions, date) {
   var dayIdx = dateToDayIndex(date);
+  lastRows = [];
+  document.getElementById("wordingWrap").style.display = "none";
 
   // Build submission map: JADWAL index → [{merchant, nip, nama}]
   var subMap = {};
@@ -483,6 +497,9 @@ function renderDashboard(submissions, date) {
                   : entry.area === "Area Makassar Ratulangi" ? "Mks Ratulangi"
                   : entry.area;
 
+    lastRows.push({ kode: entry.kode, nama: entry.nama, areaKey: areaKey, areaShort: areaShort,
+                    status: status, sched: scheduledMerchant, qty: entry.qty, submitCount: submitCount });
+
     rows += '<tr data-status="' + status + '" data-area="' + areaKey + '">' +
       '<td class="code">' + entry.kode + '</td>' +
       '<td class="nama-cell">' + entry.nama + '</td>' +
@@ -501,6 +518,74 @@ function renderDashboard(submissions, date) {
   document.getElementById("noDataMsg").style.display = "none";
   curStatusFilter = "all"; curAreaFilter = "all";
   applyFilters();
+}
+
+// ============================================================
+// WORDING WHATSAPP
+// ============================================================
+function formatTanggalID(d) {
+  var p = d.split("-");
+  return p[2] + "/" + p[1] + "/" + p[0];
+}
+
+function genWording() {
+  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
+  var date = document.getElementById("dateInput").value;
+  var dayName = DAYS[new Date(date + "T00:00:00").getDay()];
+  var areaLabel = {
+    all: "Semua Area", kartini: "Area Makassar Kartini", ratulangi: "Area Makassar Ratulangi",
+    r10: "Unit Region X", r10ho: "Unit Region X (Under HO)"
+  }[curAreaFilter];
+
+  var miss = lastRows.filter(function(r){
+    return r.status === "miss" && (curAreaFilter === "all" || r.areaKey === curAreaFilter);
+  });
+
+  var text = "*MONITORING PARTISIPASI LIVIN' FOOD*\n" +
+             "Region X / Sulawesi & Maluku\n" +
+             dayName + ", " + formatTanggalID(date) + "\n\n";
+
+  if (!miss.length) {
+    text += "Seluruh unit/cabang (" + areaLabel + ") sudah melakukan transaksi Livin' Food hari ini. Terima kasih! 🙏";
+  } else {
+    text += "Mohon perhatian, berikut unit/cabang (" + areaLabel + ") yang *BELUM* melakukan transaksi Livin' Food hari ini:\n";
+    var groups = {}, order = [];
+    miss.forEach(function(r){
+      if (!groups[r.areaShort]) { groups[r.areaShort] = []; order.push(r.areaShort); }
+      groups[r.areaShort].push(r);
+    });
+    order.forEach(function(g){
+      text += "\n*" + g + "* (" + groups[g].length + ")\n";
+      groups[g].forEach(function(r, i){
+        var kodePrefix = (r.kode === "R10" || r.kode === "R10HO") ? "" : r.kode + " - ";
+        text += (i + 1) + ". " + kodePrefix + r.nama + " → " + r.sched + " (target " + r.qty + "x)\n";
+      });
+    });
+    text += "\nMohon segera melakukan transaksi di merchant sesuai jadwal dan upload bukti pada form partisipasi. Terima kasih 🙏";
+  }
+
+  document.getElementById("wordingText").value = text;
+  document.getElementById("wordingWrap").style.display = "block";
+  document.getElementById("wordingWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function copyWording(btn) {
+  var ta = document.getElementById("wordingText");
+  var done = function(){
+    var old = btn.textContent;
+    btn.textContent = "✅ Tersalin!";
+    setTimeout(function(){ btn.textContent = old; }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value).then(done);
+  } else {
+    ta.select(); document.execCommand("copy"); done();
+  }
+}
+
+function sendWA() {
+  var t = document.getElementById("wordingText").value;
+  window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank");
 }
 
 // ============================================================
