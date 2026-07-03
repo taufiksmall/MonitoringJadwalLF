@@ -161,6 +161,7 @@
         <button class="btn btn-blue" onclick="copyWording(this)">📋 Salin</button>
         <button class="btn" style="background:#25D366; color:#fff; border:none;" onclick="sendWA()">💬 Kirim ke WhatsApp</button>
         <button class="btn" style="background:#0b5cab; color:#fff; border:none;" onclick="genWordingImage()">🖼️ Gambar Tabel</button>
+        <button class="btn" style="background:#128C7E; color:#fff; border:none;" onclick="shareBoth()">📤 Kirim Gambar + Teks</button>
         <button class="pill" onclick="document.getElementById('wordingWrap').style.display='none'">Tutup</button>
       </div>
       <div id="imgWrap" style="display:none; margin-top:12px;">
@@ -651,8 +652,7 @@ function fitText_(ctx, txt, maxW) {
   return txt + "…";
 }
 
-function genWordingImage() {
-  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
+function buildImageCanvas() {
   var d = buildMissData();
   var W = 900, pad = 24, rowH = 34, grpH = 38, headH = 96, colHeadH = 34, footH = 44;
   var nRows = d.miss.length, nGrp = d.order.length;
@@ -720,13 +720,53 @@ function genWordingImage() {
   ctx.font = "italic 11px Arial"; ctx.fillStyle = "#8296ac";
   ctx.fillText("Digenerate otomatis dari Dashboard Monitoring Livin' Food — " + new Date().toLocaleString("id-ID"), pad, H - footH / 2);
 
-  cv.toBlob(function(blob){
+  return cv;
+}
+
+function makeImageBlob(cb) {
+  buildImageCanvas().toBlob(cb, "image/png");
+}
+
+function genWordingImage() {
+  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
+  makeImageBlob(function(blob){
     lastImgBlob = blob;
     document.getElementById("wordingImg").src = URL.createObjectURL(blob);
     document.getElementById("imgWrap").style.display = "block";
     document.getElementById("wordingWrap").style.display = "block";
     document.getElementById("imgWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, "image/png");
+  });
+}
+
+// Kirim gambar + teks sekaligus ke WhatsApp
+function shareBoth() {
+  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
+  if (!document.getElementById("wordingText").value) genWording();
+  var text = document.getElementById("wordingText").value;
+  var fileName = "monitoring_livinfood_" + document.getElementById("dateInput").value + ".png";
+
+  makeImageBlob(function(blob){
+    lastImgBlob = blob;
+    var file = new File([blob], fileName, { type: "image/png" });
+
+    // Jalur 1: Web Share API (HP / browser yang mendukung) — gambar + teks sekaligus
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], text: text, title: "Update Transaksi Livin' Food" })
+        .catch(function(){ /* dibatalkan user */ });
+      return;
+    }
+
+    // Jalur 2 (desktop): salin gambar ke clipboard + buka WA berisi teks
+    var openWA = function(){ window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank"); };
+    if (navigator.clipboard && window.ClipboardItem) {
+      navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]).then(function(){
+        alert("✅ Gambar tabel sudah disalin ke clipboard.\n\nWhatsApp akan terbuka berisi teks wording — setelah kirim teksnya, tinggal paste (Ctrl+V) gambar di chat yang sama.");
+        openWA();
+      }).catch(openWA);
+    } else {
+      openWA();
+    }
+  });
 }
 
 function copyImage(btn) {
