@@ -653,11 +653,32 @@ function fitText_(ctx, txt, maxW) {
 }
 
 function buildImageCanvas() {
-  var d = buildMissData();
+  var date = document.getElementById("dateInput").value;
+  var dayName = DAYS[new Date(date + "T00:00:00").getDay()];
+  var areaLabel = {
+    all: "Semua Area", kartini: "Area Makassar Kartini", ratulangi: "Area Makassar Ratulangi",
+    r10: "Unit Region X", r10ho: "Unit Region X (Under HO)"
+  }[curAreaFilter];
+
+  // Seluruh entitas sesuai filter area (bukan hanya yang belum)
+  var rows = lastRows.filter(function(r){
+    return curAreaFilter === "all" || r.areaKey === curAreaFilter;
+  });
+  var groups = {}, order = [];
+  rows.forEach(function(r){
+    if (!groups[r.areaShort]) { groups[r.areaShort] = []; order.push(r.areaShort); }
+    groups[r.areaShort].push(r);
+  });
+
+  var nOk = 0, nWarn = 0, nMiss = 0;
+  rows.forEach(function(r){
+    if (r.status === "ok") nOk++;
+    else if (r.status === "warn") nWarn++;
+    else nMiss++;
+  });
+
   var W = 900, pad = 24, rowH = 34, grpH = 38, headH = 96, colHeadH = 34, footH = 44;
-  var nRows = d.miss.length, nGrp = d.order.length;
-  var bodyH = nRows ? (colHeadH + nGrp * grpH + nRows * rowH) : 50;
-  var H = headH + bodyH + footH;
+  var H = headH + colHeadH + order.length * grpH + rows.length * rowH + footH;
   var scale = 2;
   var cv = document.createElement("canvas");
   cv.width = W * scale; cv.height = H * scale;
@@ -670,51 +691,55 @@ function buildImageCanvas() {
 
   // Judul
   ctx.fillStyle = "#0b3a6e"; ctx.font = "bold 20px Arial";
-  ctx.fillText("MONITORING PARTISIPASI LIVIN' FOOD", pad, 28);
+  ctx.fillText("UPDATE TRANSAKSI LIVIN' FOOD", pad, 28);
   ctx.font = "13px Arial"; ctx.fillStyle = "#3d5a80";
-  ctx.fillText("Region X / Sulawesi & Maluku — " + d.dayName + ", " + formatTanggalID(d.date), pad, 52);
-  ctx.font = "bold 14px Arial"; ctx.fillStyle = nRows ? "#c0392b" : "#1e8e4e";
-  ctx.fillText(nRows ? ("BELUM TRANSAKSI (" + d.areaLabel + "): " + nRows + " entitas")
-                     : ("Seluruh unit/cabang (" + d.areaLabel + ") sudah transaksi hari ini"), pad, 78);
+  ctx.fillText("Region X / Sulawesi & Maluku — " + dayName + ", " + formatTanggalID(date) + " (" + areaLabel + ")", pad, 52);
+  ctx.font = "bold 13px Arial";
+  ctx.fillStyle = "#1e8e4e"; ctx.fillText("✅ Sesuai: " + nOk, pad, 78);
+  ctx.fillStyle = "#c77700"; ctx.fillText("⚠️ Kurang/Beda: " + nWarn, pad + 140, 78);
+  ctx.fillStyle = "#c0392b"; ctx.fillText("❌ Belum: " + nMiss, pad + 320, 78);
 
   var y = headH;
   var tblW = W - pad * 2;
-  // Kolom: No, Kode, Nama, Merchant Wajib, Target
-  var cols = [40, 80, 468, 204, 60];
+  // Kolom: No, Nama Cabang/Unit, Merchant Wajib, Jumlah Transaksi, Target
+  var cols = [40, 420, 190, 122, 80];
   var colX = [pad];
   for (var c = 0; c < cols.length; c++) colX.push(colX[c] + cols[c]);
 
-  if (nRows) {
-    // Header kolom
-    ctx.fillStyle = "#eef4fb"; ctx.fillRect(pad, y, tblW, colHeadH);
-    ctx.strokeStyle = "#d7e3f0"; ctx.strokeRect(pad, y, tblW, colHeadH);
-    ctx.fillStyle = "#0b3a6e"; ctx.font = "bold 12px Arial";
-    var heads = ["No", "Kode", "Nama Cabang / Unit", "Merchant Wajib", "Target"];
-    heads.forEach(function(h, i){ ctx.fillText(h, colX[i] + 8, y + colHeadH / 2); });
-    y += colHeadH;
+  // Header kolom
+  ctx.fillStyle = "#eef4fb"; ctx.fillRect(pad, y, tblW, colHeadH);
+  ctx.strokeStyle = "#d7e3f0"; ctx.strokeRect(pad, y, tblW, colHeadH);
+  ctx.fillStyle = "#0b3a6e"; ctx.font = "bold 12px Arial";
+  var heads = ["No", "Nama Cabang / Unit", "Merchant Wajib", "Jumlah Transaksi", "Target"];
+  heads.forEach(function(h, i){ ctx.fillText(h, colX[i] + 8, y + colHeadH / 2); });
+  y += colHeadH;
 
-    d.order.forEach(function(g){
-      // Bar grup
-      ctx.fillStyle = "#1F4E79"; ctx.fillRect(pad, y, tblW, grpH);
-      ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Arial";
-      ctx.fillText(g + "  (" + d.groups[g].length + " entitas)", pad + 10, y + grpH / 2);
-      y += grpH;
+  order.forEach(function(g){
+    // Bar grup area
+    ctx.fillStyle = "#1F4E79"; ctx.fillRect(pad, y, tblW, grpH);
+    ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Arial";
+    ctx.fillText(g + "  (" + groups[g].length + " entitas)", pad + 10, y + grpH / 2);
+    y += grpH;
 
-      d.groups[g].forEach(function(r, i){
-        ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#f6f9fd";
-        ctx.fillRect(pad, y, tblW, rowH);
-        ctx.strokeStyle = "#e3ecf5"; ctx.strokeRect(pad, y, tblW, rowH);
-        ctx.font = "12px Arial"; ctx.fillStyle = "#33475e";
-        var kode = (r.kode === "R10" || r.kode === "R10HO") ? "—" : r.kode;
-        ctx.fillText(String(i + 1), colX[0] + 8, y + rowH / 2);
-        ctx.fillText(kode, colX[1] + 8, y + rowH / 2);
-        ctx.fillText(fitText_(ctx, r.nama, cols[2] - 16), colX[2] + 8, y + rowH / 2);
-        ctx.fillText(fitText_(ctx, r.sched, cols[3] - 16), colX[3] + 8, y + rowH / 2);
-        ctx.fillText(r.qty + "x", colX[4] + 8, y + rowH / 2);
-        y += rowH;
-      });
+    groups[g].forEach(function(r, i){
+      ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#f6f9fd";
+      ctx.fillRect(pad, y, tblW, rowH);
+      ctx.strokeStyle = "#e3ecf5"; ctx.strokeRect(pad, y, tblW, rowH);
+      ctx.font = "12px Arial"; ctx.fillStyle = "#33475e";
+      var nm = (r.kode === "R10" || r.kode === "R10HO") ? r.nama : r.kode + " " + r.nama;
+      ctx.fillText(String(i + 1), colX[0] + 8, y + rowH / 2);
+      ctx.fillText(fitText_(ctx, nm, cols[1] - 16), colX[1] + 8, y + rowH / 2);
+      ctx.fillText(fitText_(ctx, r.sched, cols[2] - 16), colX[2] + 8, y + rowH / 2);
+      // Jumlah transaksi berwarna sesuai status
+      var jmlColor = r.status === "ok" ? "#1e8e4e" : (r.status === "warn" ? "#c77700" : "#c0392b");
+      var stMark = r.status === "ok" ? " ✅" : (r.status === "warn" ? " ⚠️" : " ❌");
+      ctx.font = "bold 12px Arial"; ctx.fillStyle = jmlColor;
+      ctx.fillText(r.submitCount + stMark, colX[3] + 8, y + rowH / 2);
+      ctx.font = "12px Arial"; ctx.fillStyle = "#33475e";
+      ctx.fillText(r.qty + "x", colX[4] + 8, y + rowH / 2);
+      y += rowH;
     });
-  }
+  });
 
   // Footer
   ctx.font = "italic 11px Arial"; ctx.fillStyle = "#8296ac";
