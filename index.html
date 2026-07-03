@@ -371,6 +371,28 @@ function applyFilters() {
     var hideArea = curAreaFilter !== "all" && ar !== curAreaFilter;
     row.classList.toggle("hidden-row", hideStatus || hideArea);
   });
+  updateStats();
+}
+
+// Kartu ringkasan mengikuti filter area yang dipilih
+function updateStats() {
+  var rows = document.querySelectorAll("#tblBody tr");
+  var tot = 0, ok = 0, warn = 0, miss = 0;
+  rows.forEach(function(row){
+    if (curAreaFilter !== "all" && row.getAttribute("data-area") !== curAreaFilter) return;
+    tot++;
+    var st = row.getAttribute("data-status");
+    if (st === "ok") ok++;
+    else if (st === "warn") warn++;
+    else miss++;
+  });
+  var pct = tot ? Math.round(ok / tot * 100) : 0;
+  document.getElementById("cTotal").textContent = tot;
+  document.getElementById("cOk").textContent = ok;
+  document.getElementById("cWarn").textContent = warn;
+  document.getElementById("cMiss").textContent = miss;
+  document.getElementById("cPct").textContent = pct + "%";
+  document.getElementById("pbar").style.width = pct + "%";
 }
 
 // ============================================================
@@ -419,7 +441,13 @@ function renderDashboard(submissions, date) {
   var totalOk=0, totalWarn=0, totalMiss=0;
   var rows = "";
 
-  JADWAL.forEach(function(entry, idx){
+  // Regional CEO & L3+ selalu tampil paling atas
+  var renderList = JADWAL.slice().sort(function(a, b){
+    return (a.nama === "Regional CEO & L3+" ? 0 : 1) - (b.nama === "Regional CEO & L3+" ? 0 : 1);
+  });
+
+  renderList.forEach(function(entry){
+    var idx = JADWAL.indexOf(entry);
     var subs = subMap[idx] || [];
     var scheduledMerchant = entry.jadwal[dayIdx];
     var submitCount = subs.length;
@@ -466,14 +494,6 @@ function renderDashboard(submissions, date) {
     '</tr>';
   });
 
-  var total = JADWAL.length;
-  var pct = Math.round(totalOk / total * 100);
-
-  document.getElementById("cOk").textContent = totalOk;
-  document.getElementById("cWarn").textContent = totalWarn;
-  document.getElementById("cMiss").textContent = totalMiss;
-  document.getElementById("cPct").textContent = pct + "%";
-  document.getElementById("pbar").style.width = pct + "%";
   document.getElementById("summaryWrap").style.display = "block";
   document.getElementById("filterRow").style.display = "flex";
   document.getElementById("tblBody").innerHTML = rows;
