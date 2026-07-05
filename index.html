@@ -3,139 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#003a70">
 <title>Monitoring Harian Livin' Food — Region X</title>
 <style>
-  /* ==========================================================
-     REDESIGN VISUAL — logika JavaScript TIDAK diubah sama sekali.
-     Semua id, onclick, dan class yang dibaca JS dipertahankan:
-     pill, active, hidden-row, tab, filter-row, code, nama-cell,
-     area-badge, qty-cell, qty-val, qty-slash, chip, chip-ok,
-     chip-warn, chip-err, mtag, m-*
-     ========================================================== */
   :root{
-    --blue:#003a70;--blue-dk:#00294f;--blue-soft:#eef4fb;
-    --gold:#f9b500;
-    --bg:#edf1f6;--card:#fff;--text:#16283c;--muted:#5d7089;
-    --ok:#1e8e3e;--ok-bg:#e6f4ea;--ok-tx:#176c33;
-    --warn:#8a5a00;--warn-bg:#fff4d6;--warn-bd:#d9a400;
-    --beda:#b45309;
+    --blue:#003a70;--blue-dk:#002347;--gold:#f9b500;
+    --bg:#eef2f6;--card:#fff;--text:#1c2733;--muted:#6b7787;
+    --ok:#1e8e3e;--ok-bg:#e6f4ea;
+    --warn:#b06000;--warn-bg:#fff3e0;
     --err:#c5221f;--err-bg:#fdecea;
-    --border:#dbe4ee;--line:#eef2f7;
+    --border:#dbe2ea;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  html{-webkit-text-size-adjust:100%;}
-  body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);
-       font-size:14px;line-height:1.45;-webkit-tap-highlight-color:transparent;
-       padding-bottom:calc(28px + env(safe-area-inset-bottom));}
-  button{font-family:inherit;}
-  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid rgba(0,58,112,.35);outline-offset:2px;}
+  body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:40px;}
+  header{background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;padding:20px 18px 28px;text-align:center;}
+  header h1{font-size:17px;font-weight:700;margin-bottom:3px;}
+  header p{font-size:11.5px;color:#cfe0f0;}
+  .bar{height:3px;width:46px;background:var(--gold);margin:11px auto 0;border-radius:2px;}
+  .wrap{max-width:900px;margin:-14px auto 0;padding:0 14px;}
 
-  /* ===== Header ===== */
-  header{background:linear-gradient(150deg,var(--blue) 0%,var(--blue-dk) 100%);color:#fff;padding:20px 16px 66px;text-align:center;}
-  header h1{font-size:18px;font-weight:800;letter-spacing:.2px;}
-  header p{font-size:12px;color:#c9dcf0;margin-top:3px;}
-  .bar{height:3px;width:52px;background:var(--gold);margin:12px auto 0;border-radius:2px;}
-  .wrap{max-width:940px;margin:-50px auto 0;padding:0 12px;}
-
-  /* ===== Tabs ===== */
-  .tabs{display:flex;gap:6px;}
-  .tab{flex:1;min-height:48px;padding:8px 6px;border:none;border-radius:12px 12px 0 0;font-size:13.5px;font-weight:700;
-       cursor:pointer;background:rgba(255,255,255,.14);color:#cfe0f0;}
+  /* Tabs */
+  .tabs{display:flex;gap:3px;padding:10px 0 0;}
+  .tab{flex:1;padding:9px 6px;border:none;border-radius:9px 9px 0 0;font-size:12.5px;font-weight:600;
+       cursor:pointer;background:#cfd8e3;color:var(--muted);}
   .tab.active{background:var(--card);color:var(--blue);}
-  .panel{background:var(--card);border-radius:0 0 14px 14px;padding:14px 12px 18px;box-shadow:0 6px 22px rgba(0,30,60,.10);}
+  .panel{background:var(--card);border-radius:0 0 13px 13px;padding:16px 14px;box-shadow:0 4px 18px rgba(0,30,60,.09);}
   .panel.hidden{display:none;}
 
-  /* ===== Kontrol tanggal (langkah pertama) ===== */
-  .ctrl{background:#f4f7fb;border:1px solid var(--border);border-radius:12px;padding:12px;}
-  .ctrl-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
-  .ctrl-label{font-size:13px;font-weight:800;color:var(--blue);}
-  .today-chip{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;}
-  .day-badge{padding:4px 12px;border-radius:999px;font-size:12px;font-weight:800;background:var(--blue);color:#fff;letter-spacing:.4px;}
-  .ctrl-fields{display:flex;gap:8px;flex-wrap:wrap;}
-  input[type=date]{flex:1 1 170px;min-width:0;min-height:48px;padding:8px 12px;border:1.5px solid #c3d1e0;border-radius:10px;
-                   font-size:16px;font-family:inherit;background:#fff;color:var(--text);}
-  .btn{border:none;border-radius:10px;font-weight:700;cursor:pointer;}
-  .btn-gold{flex:1 1 140px;min-height:48px;padding:8px 18px;font-size:14.5px;background:var(--gold);color:#212d3b;
-            box-shadow:0 3px 10px rgba(249,181,0,.35);}
-  .btn-gold:active{transform:translateY(1px);}
-  #loadMsg{display:none;}
-  #loadMsg:not(:empty){display:inline-flex;margin-top:10px;background:#e4eefb;color:var(--blue);border-radius:999px;
-                       padding:8px 14px;font-size:13px;font-weight:700;animation:pulse 1.2s ease-in-out infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+  /* Controls */
+  .ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+  .day-badge{padding:4px 12px;border-radius:12px;font-size:11.5px;font-weight:700;background:var(--blue);color:#fff;}
+  input[type=date]{padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fbfcfe;}
+  .btn{padding:7px 15px;border:none;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .btn-blue{background:var(--blue);color:#fff;}
+  .btn-blue:hover{background:var(--blue-dk);}
+  #loadMsg{font-size:12.5px;color:var(--muted);}
 
-  /* ===== Ringkasan: 2 kartu utama + 3 kartu kecil ===== */
-  #summaryWrap{margin-top:14px;}
-  .hero-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .scard{border-radius:12px;text-align:left;}
-  .scard .val{font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
-  .scard .lbl{font-size:12px;font-weight:700;}
-  .scard .sub{font-size:12px;color:var(--muted);margin-top:2px;}
-  .hero{padding:14px;}
-  .hero .val{font-size:34px;line-height:1.1;}
-  .scard.miss{background:#fdeeed;border:1px solid #f2c7c3;}
+  /* Summary cards */
+  .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;}
+  @media(max-width:520px){.cards{grid-template-columns:repeat(3,1fr);}}
+  .scard{background:var(--bg);border-radius:9px;padding:10px 8px;text-align:center;}
+  .scard .val{font-size:22px;font-weight:700;margin-bottom:2px;}
+  .scard .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;line-height:1.3;}
+  .scard.total .val{color:var(--blue);}
+  .scard.ok .val{color:var(--ok);}
+  .scard.warn .val{color:var(--warn);}
   .scard.miss .val{color:var(--err);}
-  .scard.miss .lbl{color:#8f2723;}
-  .scard.pct{background:var(--blue-soft);border:1px solid #cddcec;}
-  .scard.pct .val{color:var(--blue);}
-  .scard.pct .lbl{color:var(--blue);}
-  .pbar-wrap{background:#d3e0ee;border-radius:5px;height:8px;margin-top:10px;overflow:hidden;}
+  .scard.pct .val{color:#7b2d8b;}
+  .pbar-wrap{background:var(--border);border-radius:5px;height:7px;margin-bottom:14px;overflow:hidden;}
   .pbar{height:100%;border-radius:5px;background:var(--ok);transition:width .4s;}
-  .mini-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;}
-  .mini{background:#f6f8fb;border:1px solid #e5ebf3;padding:10px 8px;text-align:center;}
-  .mini .val{font-size:20px;}
-  .mini .lbl{font-size:12px;color:var(--muted);font-weight:600;margin-top:1px;}
-  .mini.total .val{color:var(--blue);}
-  .mini.ok .val{color:var(--ok-tx);}
-  .mini.warn .val{color:var(--warn);}
 
-  /* ===== Filter: dua baris terpisah (status & area) ===== */
-  .filter-group{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;}
-  .fgroup-label{flex-basis:100%;font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#61738c;}
-  .pill{min-height:44px;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;
-        border:1.5px solid #c3d1e0;background:#fff;color:#3f5470;display:inline-flex;align-items:center;justify-content:center;
-        flex:1 1 auto;}
+  /* Filters */
+  .filter-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+  .pill{padding:4px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;
+        border:1.5px solid var(--border);background:#fff;color:var(--muted);}
   .pill.active{border-color:var(--blue);background:var(--blue);color:#fff;}
-  /* warna aktif mengikuti makna status */
-  #filterRow .pill:nth-of-type(2).active{background:var(--ok);border-color:var(--ok);}
-  #filterRow .pill:nth-of-type(3).active{background:#c77700;border-color:#c77700;}
-  #filterRow .pill:nth-of-type(4).active{background:var(--err);border-color:var(--err);}
-  /* baris area, keterangan & tombol WA muncul hanya setelah data dimuat
-     (mengikuti display:flex yang di-set JS pada #filterRow) */
-  .area-row,.legend,.wa-launch{display:none;}
-  #filterRow[style*="flex"] ~ .area-row{display:flex;}
-  #filterRow[style*="flex"] ~ .legend{display:flex;}
-  #filterRow[style*="flex"] ~ .wa-launch{display:block;}
 
-  /* ===== Keterangan status ===== */
-  .legend{margin-top:12px;flex-wrap:wrap;gap:8px 14px;align-items:center;}
-  .lg-item{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+  /* Table */
+  .tbl-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{background:#f4f7fb;padding:8px 10px;text-align:left;font-weight:700;font-size:11.5px;
+     color:var(--blue);border-bottom:2px solid var(--border);white-space:nowrap;}
+  td{padding:8px 10px;border-bottom:1px solid #f0f3f7;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#fafbfd;}
+  tr.hidden-row{display:none;}
+  .code{font-family:monospace;font-size:11px;color:var(--muted);}
+  .nama-cell{font-weight:600;max-width:180px;}
+  .area-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10.5px;
+              font-weight:600;background:var(--bg);color:var(--blue);}
 
-  /* ===== Chip status (digenerate JS) ===== */
-  .chip{display:inline-flex;align-items:center;gap:3px;padding:5px 10px;border-radius:999px;
-        font-size:12px;font-weight:700;white-space:nowrap;border:1.5px solid transparent;}
-  .chip-ok{background:var(--ok-bg);color:var(--ok-tx);border-color:#bfe3cb;}
-  .chip-warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-bd);border-style:dashed;}
-  .chip-err{background:var(--err);color:#fff;border-color:var(--err);}
-  .chip-beda{background:var(--beda);color:#fff;border-color:var(--beda);border-style:solid;}
-  /* "Merchant Beda" dibedakan dari "QTY Kurang": bila merchant aktual (kolom 6)
-     berbeda kelas dari merchant wajib (kolom 4), chip kuning berubah oranye pekat.
-     Class chip-warn tetap dipakai; ini murni CSS. */
-  tr[data-status="warn"]:has(td:nth-child(4) .m-konijiwa):has(td:nth-child(6) .mtag:not(.m-konijiwa)) .chip-warn,
-  tr[data-status="warn"]:has(td:nth-child(4) .m-darikopi):has(td:nth-child(6) .mtag:not(.m-darikopi)) .chip-warn,
-  tr[data-status="warn"]:has(td:nth-child(4) .m-coto):has(td:nth-child(6) .mtag:not(.m-coto)) .chip-warn,
-  tr[data-status="warn"]:has(td:nth-child(4) .m-masdaeng):has(td:nth-child(6) .mtag:not(.m-masdaeng)) .chip-warn,
-  tr[data-status="warn"]:has(td:nth-child(4) .m-eksposed):has(td:nth-child(6) .mtag:not(.m-eksposed)) .chip-warn{
-    background:var(--beda);color:#fff;border-color:var(--beda);border-style:solid;
-  }
-
-  /* ===== Pesan error ===== */
-  #errMsg{display:none;}
-  #errMsg:not(:empty){display:block;margin-top:12px;background:var(--err-bg);border:1px solid #f0c1be;color:#a1201d;
-                      border-radius:10px;padding:12px 14px;font-size:13px;font-weight:600;}
-
-  /* ===== Tag merchant (digenerate JS) ===== */
-  .mtag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;}
+  /* Merchant tags */
+  .mtag{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11.5px;font-weight:600;white-space:nowrap;}
   .m-konijiwa{background:#e8f0fe;color:#1a56db;}
   .m-darikopi{background:#fef3cd;color:#7d5a00;}
   .m-coto{background:#fce8e8;color:#c5221f;}
@@ -143,126 +81,29 @@
   .m-eksposed{background:#f4e8fc;color:#7b2d8b;}
   .m-other{background:#f4f7fb;color:var(--muted);}
 
-  /* ===== Tabel (dasar) ===== */
-  .tbl-wrap{margin-top:12px;}
-  table{width:100%;border-collapse:collapse;}
-  .code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--muted);}
-  .nama-cell{font-weight:700;}
-  .area-badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:12px;font-weight:700;
-              background:#e9f0f8;color:var(--blue);white-space:nowrap;}
-  .qty-cell{display:flex;align-items:baseline;gap:2px;}
-  .qty-val{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;}
-  .qty-slash{color:var(--muted);font-size:12px;font-weight:600;}
-  #tblBody tr.hidden-row{display:none!important;}
+  /* QTY */
+  .qty-cell{display:flex;align-items:center;gap:3px;}
+  .qty-val{font-weight:700;font-size:13px;}
+  .qty-slash{color:var(--muted);font-size:11px;}
 
-  /* ===== Tabel: mode layar lebar ===== */
-  @media(min-width:1001px){
-    .panel{padding:18px 18px 20px;}
-    .ctrl-fields{max-width:480px;}
-    .tbl-wrap{border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:72vh;}
-    th{position:sticky;top:0;z-index:2;background:#f2f6fb;padding:11px 12px;text-align:left;font-weight:800;
-       font-size:12px;color:var(--blue);border-bottom:2px solid var(--border);white-space:nowrap;}
-    td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:13px;}
-    tbody tr:last-child td{border-bottom:none;}
-    tbody tr:hover td{background:#f7fafd;}
-    tr[data-status="miss"] td{background:#fffafa;}
-    tr[data-status="miss"]:hover td{background:#fdf3f2;}
-    .nama-cell{max-width:230px;}
-    .pill{flex:0 0 auto;min-height:40px;}
-  }
+  /* Status chips */
+  .chip{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:10px;
+        font-size:11px;font-weight:600;white-space:nowrap;}
+  .chip-ok{background:var(--ok-bg);color:var(--ok);}
+  .chip-warn{background:var(--warn-bg);color:var(--warn);}
+  .chip-err{background:var(--err-bg);color:var(--err);}
 
-  /* ===== Tabel: mode HP — tiap baris jadi kartu ===== */
-  @media(max-width:1000px){
-    thead{display:none;}
-    table{display:block;}
-    #tblBody{display:grid;grid-template-columns:1fr;gap:10px;}
-    #tblBody tr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
-                grid-template-areas:"code area status" "nama nama nama" "wajib aktual qty";
-                gap:8px 12px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;}
-    #tblBody tr[data-status="warn"]{background:#fffdf6;border-color:#ecdcb0;}
-    #tblBody tr[data-status="miss"]{background:#fff9f8;border-color:#f0cfcc;}
-    #tblBody td{display:block;padding:0;border:none;min-width:0;}
-    .area-badge{white-space:normal;max-width:100%;}
-    #tblBody td:nth-child(1){grid-area:code;align-self:center;}
-    #tblBody td:nth-child(2){grid-area:nama;}
-    #tblBody td:nth-child(3){grid-area:area;align-self:center;}
-    #tblBody td:nth-child(4){grid-area:wajib;}
-    #tblBody td:nth-child(5){grid-area:qty;justify-self:end;text-align:right;}
-    #tblBody td:nth-child(6){grid-area:aktual;}
-    #tblBody td:nth-child(7){grid-area:status;justify-self:end;}
-    #tblBody td:nth-child(4)::before{content:"Wajib";}
-    #tblBody td:nth-child(5)::before{content:"Transaksi";}
-    #tblBody td:nth-child(6)::before{content:"Aktual";}
-    #tblBody td:nth-child(4)::before,#tblBody td:nth-child(5)::before,#tblBody td:nth-child(6)::before{
-      display:block;font-size:12px;font-weight:700;color:#6b7c94;margin-bottom:3px;}
-    .nama-cell{max-width:none;font-size:14.5px;}
-    .qty-cell{justify-content:flex-end;}
-  }
-  @media(min-width:560px) and (max-width:1000px){
-    #tblBody{grid-template-columns:repeat(2,minmax(0,1fr));}
-  }
+  /* Jadwal tab */
+  .jadwal-day-header{font-size:13.5px;font-weight:700;color:var(--blue);
+                     margin:12px 0 8px;padding-bottom:5px;border-bottom:2px solid var(--border);}
+  .jadwal-group{margin-bottom:14px;}
+  .merchant-group-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .jadwal-list{display:flex;flex-wrap:wrap;gap:5px;}
+  .jadwal-item{padding:4px 10px;background:var(--bg);border-radius:8px;font-size:12px;border:1px solid var(--border);}
+  .jadwal-item .jcode{font-family:monospace;font-size:10.5px;color:var(--muted);margin-right:4px;}
 
-  /* ===== Kondisi awal / kosong ===== */
-  #noDataMsg{padding:26px 10px 10px;text-align:center;color:var(--text);}
-  .empty-ico{font-size:34px;line-height:1;margin-bottom:8px;}
-  .empty-title{font-size:15px;font-weight:800;color:var(--blue);margin-bottom:14px;}
-  .empty-steps{list-style:none;text-align:left;max-width:440px;margin:0 auto;display:grid;gap:10px;}
-  .empty-steps li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#42536a;}
-  .step-num{flex:none;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;
-            font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-top:1px;}
-  .fake-btn{display:inline-block;padding:2px 10px;border-radius:8px;background:var(--gold);color:#212d3b;font-weight:800;font-size:12px;}
-  .empty-loading{display:none;max-width:440px;margin:0 auto;text-align:left;}
-  .empty-loading .load-title{font-size:13.5px;font-weight:800;color:var(--blue);margin-bottom:12px;text-align:center;}
-  .skel{display:grid;gap:10px;}
-  .skel-bar{border-radius:10px;background:linear-gradient(90deg,#e7edf4 25%,#d9e2ec 45%,#e7edf4 65%);
-            background-size:200% 100%;animation:shimmer 1.1s linear infinite;}
-  @keyframes shimmer{from{background-position:200% 0;}to{background-position:-200% 0;}}
-  #panelDashboard:has(#loadMsg:not(:empty)) .empty-guide{display:none;}
-  #panelDashboard:has(#loadMsg:not(:empty)) .empty-loading{display:block;}
-
-  /* ===== Panel wording WhatsApp ===== */
-  #wordingWrap{margin-top:12px;background:#fff;border:1.5px solid #cdddec;border-radius:14px;padding:14px;
-               scroll-margin:14px;box-shadow:0 8px 24px rgba(0,30,60,.08);}
-  .whead{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .whead-title{font-size:14.5px;font-weight:800;color:var(--blue);}
-  .wclose{width:44px;height:44px;border:none;border-radius:10px;background:#eff3f8;color:#42536a;
-          font-size:16px;font-weight:700;cursor:pointer;flex:none;}
-  .wstep{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--text);margin:12px 0 8px;}
-  #wordingText{width:100%;min-height:220px;padding:12px;border:1.5px solid #c3d1e0;border-radius:10px;
-               font-size:13px;line-height:1.55;font-family:inherit;resize:vertical;background:#fbfdff;color:var(--text);}
-  .wsend{display:grid;gap:8px;}
-  .wbtn-primary{width:100%;min-height:52px;border:none;border-radius:12px;background:#128C7E;color:#fff;
-                font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(18,140,126,.3);}
-  .wsend-row{display:flex;gap:8px;flex-wrap:wrap;}
-  .wbtn{min-height:44px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;padding:10px 12px;flex:1 1 auto;}
-  .wbtn-outline-green{background:#f0faf6;border:1.5px solid #128C7E;color:#0e6e63;}
-  .wbtn-outline-blue{background:#f2f6fb;border:1.5px solid var(--blue);color:var(--blue);}
-  .wbtn-outline-slate{background:#f4f6f9;border:1.5px solid #8296ac;color:#4c5f76;}
-  .whint{font-size:12px;color:var(--muted);}
-  #imgWrap{margin-top:14px;border-top:1px dashed var(--border);padding-top:12px;}
-  .img-cap{font-size:13px;font-weight:800;color:var(--blue);margin-bottom:8px;}
-  #wordingImg{max-width:100%;border:1px solid var(--border);border-radius:10px;box-shadow:0 2px 10px rgba(10,40,80,.08);}
-  .img-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-
-  /* ===== Tombol buat wording (melayang di bawah) ===== */
-  .wa-launch{position:sticky;bottom:12px;z-index:20;margin-top:14px;}
-  .wa-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;
-          min-height:56px;border:none;border-radius:14px;background:#128C7E;color:#fff;font-size:15px;font-weight:800;
-          cursor:pointer;box-shadow:0 8px 20px rgba(18,140,126,.35);}
-  .wa-btn small{font-size:12px;font-weight:600;color:rgba(255,255,255,.92);}
-
-  /* ===== Tab jadwal ===== */
-  .jadwal-day-header{font-size:14px;font-weight:800;color:var(--blue);background:var(--blue-soft);
-                     border:1px solid #cddcec;border-radius:10px;padding:12px 14px;margin-bottom:14px;}
-  .jadwal-group{margin-bottom:18px;}
-  .merchant-group-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-  .jadwal-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;}
-  .jadwal-item{padding:10px 12px;background:#f6f8fb;border-radius:10px;font-size:13px;border:1px solid #e5ebf3;color:var(--text);}
-  .jadwal-item .jcode{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--muted);margin-right:6px;}
-
-  .foot{max-width:940px;margin:16px auto 0;padding:0 14px;text-align:center;font-size:12px;color:#7b8ba1;}
-
-  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+  #noDataMsg{text-align:center;padding:28px;color:var(--muted);font-size:13px;}
+  #errMsg{color:var(--err);font-size:12.5px;padding:10px 0;}
 </style>
 </head>
 <body>
@@ -280,66 +121,39 @@
   </div>
 
   <!-- ===== DASHBOARD ===== -->
-  <div class="panel" id="panelDashboard" data-screen-label="Dashboard">
-
+  <div class="panel" id="panelDashboard">
     <div class="ctrl">
-      <div class="ctrl-top">
-        <label class="ctrl-label" for="dateInput">Pilih tanggal laporan</label>
-        <span class="today-chip">Hari ini: <span class="day-badge" id="dayBadge">-</span></span>
-      </div>
-      <div class="ctrl-fields">
-        <input type="date" id="dateInput">
-        <button class="btn btn-gold" onclick="loadData()">Muat Data</button>
-      </div>
-      <span id="loadMsg" aria-live="polite"></span>
+      <span class="day-badge" id="dayBadge">-</span>
+      <input type="date" id="dateInput">
+      <button class="btn btn-blue" onclick="loadData()">Muat Data</button>
+      <span id="loadMsg"></span>
     </div>
 
     <div id="summaryWrap" style="display:none;">
-      <div class="hero-cards">
-        <div class="scard hero miss">
-          <div class="val" id="cMiss">0</div>
-          <div class="lbl">❌ Belum Submit</div>
-          <div class="sub">perlu di-follow up hari ini</div>
-        </div>
-        <div class="scard hero pct">
-          <div class="val" id="cPct">0%</div>
-          <div class="lbl">Compliance Rate</div>
-          <div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
-        </div>
+      <div class="cards">
+        <div class="scard total"><div class="val" id="cTotal">40</div><div class="lbl">Total<br>Entitas</div></div>
+        <div class="scard ok"><div class="val" id="cOk">0</div><div class="lbl">✅ Sesuai<br>Merchant+QTY</div></div>
+        <div class="scard warn"><div class="val" id="cWarn">0</div><div class="lbl">⚠️ Ada<br>Ketidaksesuaian</div></div>
+        <div class="scard miss"><div class="val" id="cMiss">0</div><div class="lbl">❌ Belum<br>Submit</div></div>
+        <div class="scard pct"><div class="val" id="cPct">0%</div><div class="lbl">Compliance<br>Rate</div></div>
       </div>
-      <div class="mini-cards">
-        <div class="scard mini total"><div class="val" id="cTotal">42</div><div class="lbl">Total Entitas</div></div>
-        <div class="scard mini ok"><div class="val" id="cOk">0</div><div class="lbl">✅ Sesuai</div></div>
-        <div class="scard mini warn"><div class="val" id="cWarn">0</div><div class="lbl">⚠️ Beda / Kurang</div></div>
-      </div>
+      <div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
     </div>
 
-    <div class="filter-row filter-group" id="filterRow" style="display:none;">
-      <span class="fgroup-label">Filter status</span>
+    <div class="filter-row" id="filterRow" style="display:none;">
       <button class="pill active" onclick="setFilter('all',this)">Semua</button>
       <button class="pill" onclick="setFilter('ok',this)">✅ Sesuai</button>
-      <button class="pill" onclick="setFilter('warn',this)">⚠️ Beda/Kurang</button>
+      <button class="pill" onclick="setFilter('warn',this)">⚠️ Beda</button>
       <button class="pill" onclick="setFilter('miss',this)">❌ Belum</button>
-    </div>
-
-    <div class="filter-group area-row">
-      <span class="fgroup-label">Filter area</span>
-      <button class="pill active" onclick="setArea('all',this)">Semua Area</button>
+      <span style="flex:1"></span>
+      <button class="pill" onclick="setArea('all',this)" style="border-color:var(--blue);color:var(--blue);">Semua Area</button>
       <button class="pill" onclick="setArea('kartini',this)">Mks Kartini</button>
       <button class="pill" onclick="setArea('ratulangi',this)">Mks Ratulangi</button>
       <button class="pill" onclick="setArea('r10',this)">R10</button>
       <button class="pill" onclick="setArea('r10ho',this)">R10HO</button>
     </div>
 
-    <div class="legend">
-      <span class="lg-item"><span class="chip chip-ok">✅ Sesuai</span></span>
-      <span class="lg-item"><span class="chip chip-beda">⚠️ Merchant Beda</span> salah merchant</span>
-      <span class="lg-item"><span class="chip chip-warn">⚠️ QTY Kurang</span> jumlah kurang</span>
-      <span class="lg-item"><span class="chip chip-err">❌ Belum Submit</span> belum isi form</span>
-    </div>
-
-    <div id="errMsg" aria-live="polite"></div>
-
+    <div id="errMsg"></div>
     <div class="tbl-wrap" id="tblWrap" style="display:none;">
       <table>
         <thead>
@@ -348,7 +162,7 @@
             <th>Nama Cabang / Unit</th>
             <th>Area</th>
             <th>Merchant Wajib</th>
-            <th>Submit / Target</th>
+            <th>QTY Target / Submit</th>
             <th>Merchant Aktual</th>
             <th>Status</th>
           </tr>
@@ -356,81 +170,26 @@
         <tbody id="tblBody"></tbody>
       </table>
     </div>
-
-    <div id="noDataMsg">
-      <div class="empty-guide">
-        <div class="empty-ico">🗓️</div>
-        <div class="empty-title">Belum ada data ditampilkan</div>
-        <ol class="empty-steps">
-          <li><span class="step-num">1</span><span>Tanggal di atas sudah terisi otomatis <strong>hari ini</strong>. Ganti tanggalnya bila ingin cek hari lain.</span></li>
-          <li><span class="step-num">2</span><span>Tekan tombol <span class="fake-btn">Muat Data</span> berwarna kuning.</span></li>
-          <li><span class="step-num">3</span><span>Ringkasan &amp; daftar 40 cabang/unit akan muncul di sini.</span></li>
-        </ol>
-      </div>
-      <div class="empty-loading">
-        <div class="load-title">⏳ Mengambil data dari server…</div>
-        <div class="skel">
-          <div class="skel-bar" style="height:74px"></div>
-          <div class="skel-bar" style="height:44px"></div>
-          <div class="skel-bar" style="height:110px"></div>
-          <div class="skel-bar" style="height:110px"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="wordingWrap" style="display:none;">
-      <div class="whead">
-        <span class="whead-title">📱 Wording WhatsApp</span>
-        <button class="wclose" onclick="document.getElementById('wordingWrap').style.display='none'" aria-label="Tutup">✕</button>
-      </div>
-      <div class="wstep"><span class="step-num">1</span> Periksa &amp; edit teks bila perlu</div>
-      <textarea id="wordingText"></textarea>
-      <div class="wstep"><span class="step-num">2</span> Kirim ke grup</div>
-      <div class="wsend">
-        <button class="wbtn-primary" onclick="shareBoth()">📤 Kirim Gambar + Teks</button>
-        <div class="whint">Cara tercepat — teks &amp; gambar tabel terkirim sekaligus.</div>
-        <div class="wsend-row">
-          <button class="wbtn wbtn-outline-green" onclick="sendWA()">💬 Kirim Teks Saja</button>
-          <button class="wbtn wbtn-outline-blue" onclick="copyWording(this)">📋 Salin Teks</button>
-          <button class="wbtn wbtn-outline-slate" onclick="genWordingImage()">🖼️ Gambar Tabel</button>
-        </div>
-      </div>
-      <div id="imgWrap" style="display:none;">
-        <div class="img-cap">Pratinjau gambar tabel:</div>
-        <img id="wordingImg" alt="Gambar tabel monitoring">
-        <div class="img-actions">
-          <button class="wbtn wbtn-outline-blue" onclick="copyImage(this)">📋 Salin Gambar</button>
-          <button class="wbtn wbtn-outline-slate" onclick="downloadImage()">⬇️ Download PNG</button>
-        </div>
-        <div class="whint" style="margin-top:8px;">💡 Klik "Salin Gambar" lalu paste (Ctrl+V) langsung di chat WhatsApp.</div>
-      </div>
-    </div>
-
-    <div class="wa-launch">
-      <button class="wa-btn" onclick="genWording()">📱 Buat Wording WA<small>teks &amp; gambar tabel siap kirim ke grup</small></button>
-    </div>
+    <div id="noDataMsg">Pilih tanggal dan klik <strong>Muat Data</strong>.</div>
   </div>
 
   <!-- ===== JADWAL HARI INI ===== -->
-  <div class="panel hidden" id="panelJadwal" data-screen-label="Jadwal Hari Ini">
+  <div class="panel hidden" id="panelJadwal">
     <div id="jadwalContent"></div>
   </div>
-
-  <div class="foot">Dashboard internal Region X &mdash; data dari form pelaporan Livin' Food.</div>
 </div>
 
 <script>
 // ============================================================
 // KONFIGURASI — isi dengan URL Web App Apps Script Anda
 // ============================================================
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFr2GqxZe0N3thy0zg0ymMRRmQmY8NMkoErrGHhVI_eqQ8rLkuTw0QuxloTP1wLa9Plg/exec";
+const SCRIPT_URL = "PASTE_URL_WEB_APP_APPS_SCRIPT_DI_SINI";
 
 // ============================================================
-// DATA JADWAL (42 entitas non-KFC, Senin-Minggu)
+// DATA JADWAL (40 entitas non-KFC, Senin-Minggu)
 // jadwal index: 0=Senin,1=Selasa,2=Rabu,3=Kamis,4=Jumat,5=Sabtu,6=Minggu
 // ============================================================
 const JADWAL = [
-  {area:"Area Makassar Kartini",kode:"15200A",nama:"Kantor Area Makassar Kartini",qty:3,jadwal:["Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa"]},
   {area:"Area Makassar Kartini",kode:"15200",nama:"Makassar Kartini",qty:3,jadwal:["Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa"]},
   {area:"Area Makassar Kartini",kode:"15201",nama:"Makassar Sulawesi",qty:3,jadwal:["Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa"]},
   {area:"Area Makassar Kartini",kode:"15202",nama:"Makassar Cokroaminoto",qty:3,jadwal:["Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang"]},
@@ -445,7 +204,6 @@ const JADWAL = [
   {area:"Area Makassar Kartini",kode:"15250",nama:"Makassar Monginsidi",qty:3,jadwal:["Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang"]},
   {area:"Area Makassar Kartini",kode:"15251",nama:"Makassar CPI",qty:3,jadwal:["Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi"]},
   {area:"Area Makassar Kartini",kode:"15252",nama:"Makassar Latimojong",qty:3,jadwal:["Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa","Darikopi","Coto Dg Tayang","Konijiwa"]},
-  {area:"Area Makassar Ratulangi",kode:"17400A",nama:"Kantor Area Makassar Ratulangi",qty:3,jadwal:["Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng"]},
   {area:"Area Makassar Ratulangi",kode:"17400",nama:"Makassar Sam Ratulangi",qty:3,jadwal:["Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng"]},
   {area:"Area Makassar Ratulangi",kode:"17401",nama:"Makassar Panakkukang",qty:3,jadwal:["Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed"]},
   {area:"Area Makassar Ratulangi",kode:"17402",nama:"Makassar Hertasning",qty:3,jadwal:["Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed","Mas Daeng","Eksposed"]},
@@ -548,8 +306,8 @@ function matchEntry(sub) {
   } else {
     // Region submission: match by unit name
     var unitLow = unit.toLowerCase();
-    // Special case: Regional CEO or L3+ → map to "Regional CEO & L3+"
-    if (unitLow === "regional ceo" || unitLow === "l3+") {
+    // "Regional CEO & L3+" → map to jadwal entry "Regional CEO & L3+"
+    if (unitLow === "regional ceo & l3+" || unitLow === "regional ceo" || unitLow === "l3+") {
       for (var k = 0; k < JADWAL.length; k++) {
         if (JADWAL[k].nama === "Regional CEO & L3+") return JADWAL[k];
       }
@@ -584,7 +342,6 @@ function switchTab(tab) {
 // ============================================================
 var curStatusFilter = "all";
 var curAreaFilter = "all";
-var lastRows = []; // hasil render terakhir, dipakai untuk generate wording WA
 
 function setFilter(f, el) {
   curStatusFilter = f;
@@ -614,28 +371,6 @@ function applyFilters() {
     var hideArea = curAreaFilter !== "all" && ar !== curAreaFilter;
     row.classList.toggle("hidden-row", hideStatus || hideArea);
   });
-  updateStats();
-}
-
-// Kartu ringkasan mengikuti filter area yang dipilih
-function updateStats() {
-  var rows = document.querySelectorAll("#tblBody tr");
-  var tot = 0, ok = 0, warn = 0, miss = 0;
-  rows.forEach(function(row){
-    if (curAreaFilter !== "all" && row.getAttribute("data-area") !== curAreaFilter) return;
-    tot++;
-    var st = row.getAttribute("data-status");
-    if (st === "ok") ok++;
-    else if (st === "warn") warn++;
-    else miss++;
-  });
-  var pct = tot ? Math.round(ok / tot * 100) : 0;
-  document.getElementById("cTotal").textContent = tot;
-  document.getElementById("cOk").textContent = ok;
-  document.getElementById("cWarn").textContent = warn;
-  document.getElementById("cMiss").textContent = miss;
-  document.getElementById("cPct").textContent = pct + "%";
-  document.getElementById("pbar").style.width = pct + "%";
 }
 
 // ============================================================
@@ -669,10 +404,6 @@ function loadData() {
 // ============================================================
 function renderDashboard(submissions, date) {
   var dayIdx = dateToDayIndex(date);
-  lastRows = [];
-  lastImgBlob = null;
-  document.getElementById("wordingWrap").style.display = "none";
-  document.getElementById("imgWrap").style.display = "none";
 
   // Build submission map: JADWAL index → [{merchant, nip, nama}]
   var subMap = {};
@@ -688,13 +419,7 @@ function renderDashboard(submissions, date) {
   var totalOk=0, totalWarn=0, totalMiss=0;
   var rows = "";
 
-  // Regional CEO & L3+ selalu tampil paling atas
-  var renderList = JADWAL.slice().sort(function(a, b){
-    return (a.nama === "Regional CEO & L3+" ? 0 : 1) - (b.nama === "Regional CEO & L3+" ? 0 : 1);
-  });
-
-  renderList.forEach(function(entry){
-    var idx = JADWAL.indexOf(entry);
+  JADWAL.forEach(function(entry, idx){
     var subs = subMap[idx] || [];
     var scheduledMerchant = entry.jadwal[dayIdx];
     var submitCount = subs.length;
@@ -730,9 +455,6 @@ function renderDashboard(submissions, date) {
                   : entry.area === "Area Makassar Ratulangi" ? "Mks Ratulangi"
                   : entry.area;
 
-    lastRows.push({ kode: entry.kode, nama: entry.nama, areaKey: areaKey, areaShort: areaShort,
-                    status: status, sched: scheduledMerchant, qty: entry.qty, submitCount: submitCount });
-
     rows += '<tr data-status="' + status + '" data-area="' + areaKey + '">' +
       '<td class="code">' + entry.kode + '</td>' +
       '<td class="nama-cell">' + entry.nama + '</td>' +
@@ -744,6 +466,14 @@ function renderDashboard(submissions, date) {
     '</tr>';
   });
 
+  var total = JADWAL.length;
+  var pct = Math.round(totalOk / total * 100);
+
+  document.getElementById("cOk").textContent = totalOk;
+  document.getElementById("cWarn").textContent = totalWarn;
+  document.getElementById("cMiss").textContent = totalMiss;
+  document.getElementById("cPct").textContent = pct + "%";
+  document.getElementById("pbar").style.width = pct + "%";
   document.getElementById("summaryWrap").style.display = "block";
   document.getElementById("filterRow").style.display = "flex";
   document.getElementById("tblBody").innerHTML = rows;
@@ -751,291 +481,6 @@ function renderDashboard(submissions, date) {
   document.getElementById("noDataMsg").style.display = "none";
   curStatusFilter = "all"; curAreaFilter = "all";
   applyFilters();
-}
-
-// ============================================================
-// WORDING WHATSAPP
-// ============================================================
-function formatTanggalID(d) {
-  var p = d.split("-");
-  return p[2] + "/" + p[1] + "/" + p[0];
-}
-
-function buildMissData() {
-  var date = document.getElementById("dateInput").value;
-  var dayName = DAYS[new Date(date + "T00:00:00").getDay()];
-  var areaLabel = {
-    all: "Semua Area", kartini: "Area Makassar Kartini", ratulangi: "Area Makassar Ratulangi",
-    r10: "Unit Region X", r10ho: "Unit Region X (Under HO)"
-  }[curAreaFilter];
-  var miss = lastRows.filter(function(r){
-    return r.status === "miss" && (curAreaFilter === "all" || r.areaKey === curAreaFilter);
-  });
-  var groups = {}, order = [];
-  miss.forEach(function(r){
-    if (!groups[r.areaShort]) { groups[r.areaShort] = []; order.push(r.areaShort); }
-    groups[r.areaShort].push(r);
-  });
-  return { date: date, dayName: dayName, areaLabel: areaLabel, miss: miss, groups: groups, order: order };
-}
-
-var FORM_LINK = "https://bit.ly/R10-LivinFood-Partisipation";
-
-function genWording() {
-  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
-  var date = document.getElementById("dateInput").value;
-  var dayName = DAYS[new Date(date + "T00:00:00").getDay()];
-  var now = new Date();
-  var pukul = String(now.getHours()).padStart(2, "0") + "." + String(now.getMinutes()).padStart(2, "0");
-
-  var headerLabel = {
-    all: "Region X / Sulawesi & Maluku", kartini: "Area Makassar Kartini",
-    ratulangi: "Area Makassar Ratulangi", r10: "Unit Region X / Sulawesi & Maluku",
-    r10ho: "Unit Region X (Under HO)"
-  }[curAreaFilter];
-  var sectionTitle = {
-    kartini: "AREA MAKASSAR KARTINI", ratulangi: "AREA MAKASSAR RATULANGI",
-    r10: "REGION X / SULAWESI & MALUKU", r10ho: "REGION X / UNDER HO"
-  };
-
-  var rows = lastRows.filter(function(r){
-    return curAreaFilter === "all" || r.areaKey === curAreaFilter;
-  });
-
-  var SEP = "==========================";
-  var text = "*UPDATE TRANSAKSI LIVIN' FOOD*\n" +
-             headerLabel + "\n" +
-             "Hari: " + dayName + "\n" +
-             "Pukul : " + pukul + " Wita\n";
-
-  var sectionOrder = ["kartini", "ratulangi", "r10", "r10ho"].filter(function(k){
-    return rows.some(function(r){ return r.areaKey === k; });
-  });
-
-  var firstSection = true;
-  sectionOrder.forEach(function(k){
-    text += SEP + "\n" + sectionTitle[k] + "\n" + SEP + "\n";
-    if (firstSection) {
-      text += "Link pelaporan Livin' Food\n" + FORM_LINK + "\n";
-      firstSection = false;
-    }
-    var secRows = rows.filter(function(r){ return r.areaKey === k; });
-    var mOrder = [], mGroups = {};
-    secRows.forEach(function(r){
-      if (!mGroups[r.sched]) { mGroups[r.sched] = []; mOrder.push(r.sched); }
-      mGroups[r.sched].push(r);
-    });
-    mOrder.forEach(function(m){
-      text += "Merchant: " + m + "\n";
-      mGroups[m].forEach(function(r){
-        var mark = r.status === "miss" ? "❌"
-                 : r.submitCount + "/" + r.qty + (r.status === "ok" ? " ✅" : " ⚠️");
-        var nm = (k === "kartini" || k === "ratulangi") ? r.kode + " " + r.nama : r.nama;
-        text += "- " + nm + " - " + mark + "\n";
-      });
-    });
-  });
-
-  text += "Terima kasih atas kerja samanya.";
-
-  document.getElementById("wordingText").value = text;
-  document.getElementById("wordingWrap").style.display = "block";
-  document.getElementById("wordingWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
-function copyWording(btn) {
-  var ta = document.getElementById("wordingText");
-  var done = function(){
-    var old = btn.textContent;
-    btn.textContent = "✅ Tersalin!";
-    setTimeout(function(){ btn.textContent = old; }, 2000);
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(ta.value).then(done);
-  } else {
-    ta.select(); document.execCommand("copy"); done();
-  }
-}
-
-function sendWA() {
-  var t = document.getElementById("wordingText").value;
-  window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank");
-}
-
-// ============================================================
-// GAMBAR TABEL (PNG) UNTUK WHATSAPP
-// ============================================================
-var lastImgBlob = null;
-
-function fitText_(ctx, txt, maxW) {
-  if (ctx.measureText(txt).width <= maxW) return txt;
-  while (txt.length > 1 && ctx.measureText(txt + "…").width > maxW) txt = txt.slice(0, -1);
-  return txt + "…";
-}
-
-function buildImageCanvas() {
-  var date = document.getElementById("dateInput").value;
-  var dayName = DAYS[new Date(date + "T00:00:00").getDay()];
-  var areaLabel = {
-    all: "Semua Area", kartini: "Area Makassar Kartini", ratulangi: "Area Makassar Ratulangi",
-    r10: "Unit Region X", r10ho: "Unit Region X (Under HO)"
-  }[curAreaFilter];
-
-  // Seluruh entitas sesuai filter area (bukan hanya yang belum)
-  var rows = lastRows.filter(function(r){
-    return curAreaFilter === "all" || r.areaKey === curAreaFilter;
-  });
-  var groups = {}, order = [];
-  rows.forEach(function(r){
-    if (!groups[r.areaShort]) { groups[r.areaShort] = []; order.push(r.areaShort); }
-    groups[r.areaShort].push(r);
-  });
-
-  var nOk = 0, nWarn = 0, nMiss = 0;
-  rows.forEach(function(r){
-    if (r.status === "ok") nOk++;
-    else if (r.status === "warn") nWarn++;
-    else nMiss++;
-  });
-
-  var W = 900, pad = 24, rowH = 34, grpH = 38, headH = 96, colHeadH = 34, footH = 44;
-  var H = headH + colHeadH + order.length * grpH + rows.length * rowH + footH;
-  var scale = 2;
-  var cv = document.createElement("canvas");
-  cv.width = W * scale; cv.height = H * scale;
-  var ctx = cv.getContext("2d");
-  ctx.scale(scale, scale);
-
-  // Latar
-  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
-  ctx.textBaseline = "middle";
-
-  // Judul
-  ctx.fillStyle = "#0b3a6e"; ctx.font = "bold 20px Arial";
-  ctx.fillText("UPDATE TRANSAKSI LIVIN' FOOD", pad, 28);
-  ctx.font = "13px Arial"; ctx.fillStyle = "#3d5a80";
-  ctx.fillText("Region X / Sulawesi & Maluku — " + dayName + ", " + formatTanggalID(date) + " (" + areaLabel + ")", pad, 52);
-  ctx.font = "bold 13px Arial";
-  ctx.fillStyle = "#1e8e4e"; ctx.fillText("✅ Sesuai: " + nOk, pad, 78);
-  ctx.fillStyle = "#c77700"; ctx.fillText("⚠️ Kurang/Beda: " + nWarn, pad + 140, 78);
-  ctx.fillStyle = "#c0392b"; ctx.fillText("❌ Belum: " + nMiss, pad + 320, 78);
-
-  var y = headH;
-  var tblW = W - pad * 2;
-  // Kolom: No, Nama Cabang/Unit, Merchant Wajib, Jumlah Transaksi, Target
-  var cols = [40, 420, 190, 122, 80];
-  var colX = [pad];
-  for (var c = 0; c < cols.length; c++) colX.push(colX[c] + cols[c]);
-
-  // Header kolom
-  ctx.fillStyle = "#eef4fb"; ctx.fillRect(pad, y, tblW, colHeadH);
-  ctx.strokeStyle = "#d7e3f0"; ctx.strokeRect(pad, y, tblW, colHeadH);
-  ctx.fillStyle = "#0b3a6e"; ctx.font = "bold 12px Arial";
-  var heads = ["No", "Nama Cabang / Unit", "Merchant Wajib", "Jumlah Transaksi", "Target"];
-  heads.forEach(function(h, i){ ctx.fillText(h, colX[i] + 8, y + colHeadH / 2); });
-  y += colHeadH;
-
-  order.forEach(function(g){
-    // Bar grup area
-    ctx.fillStyle = "#1F4E79"; ctx.fillRect(pad, y, tblW, grpH);
-    ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Arial";
-    ctx.fillText(g + "  (" + groups[g].length + " entitas)", pad + 10, y + grpH / 2);
-    y += grpH;
-
-    groups[g].forEach(function(r, i){
-      ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#f6f9fd";
-      ctx.fillRect(pad, y, tblW, rowH);
-      ctx.strokeStyle = "#e3ecf5"; ctx.strokeRect(pad, y, tblW, rowH);
-      ctx.font = "12px Arial"; ctx.fillStyle = "#33475e";
-      var nm = (r.kode === "R10" || r.kode === "R10HO") ? r.nama : r.kode + " " + r.nama;
-      ctx.fillText(String(i + 1), colX[0] + 8, y + rowH / 2);
-      ctx.fillText(fitText_(ctx, nm, cols[1] - 16), colX[1] + 8, y + rowH / 2);
-      ctx.fillText(fitText_(ctx, r.sched, cols[2] - 16), colX[2] + 8, y + rowH / 2);
-      // Jumlah transaksi berwarna sesuai status
-      var jmlColor = r.status === "ok" ? "#1e8e4e" : (r.status === "warn" ? "#c77700" : "#c0392b");
-      var stMark = r.status === "ok" ? " ✅" : (r.status === "warn" ? " ⚠️" : " ❌");
-      ctx.font = "bold 12px Arial"; ctx.fillStyle = jmlColor;
-      ctx.fillText(r.submitCount + stMark, colX[3] + 8, y + rowH / 2);
-      ctx.font = "12px Arial"; ctx.fillStyle = "#33475e";
-      ctx.fillText(r.qty + "x", colX[4] + 8, y + rowH / 2);
-      y += rowH;
-    });
-  });
-
-  // Footer
-  ctx.font = "italic 11px Arial"; ctx.fillStyle = "#8296ac";
-  ctx.fillText("Digenerate otomatis dari Dashboard Monitoring Livin' Food — " + new Date().toLocaleString("id-ID"), pad, H - footH / 2);
-
-  return cv;
-}
-
-function makeImageBlob(cb) {
-  buildImageCanvas().toBlob(cb, "image/png");
-}
-
-function genWordingImage() {
-  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
-  makeImageBlob(function(blob){
-    lastImgBlob = blob;
-    document.getElementById("wordingImg").src = URL.createObjectURL(blob);
-    document.getElementById("imgWrap").style.display = "block";
-    document.getElementById("wordingWrap").style.display = "block";
-    document.getElementById("imgWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
-  });
-}
-
-// Kirim gambar + teks sekaligus ke WhatsApp
-function shareBoth() {
-  if (!lastRows.length) { alert("Muat data terlebih dahulu."); return; }
-  if (!document.getElementById("wordingText").value) genWording();
-  var text = document.getElementById("wordingText").value;
-  var fileName = "monitoring_livinfood_" + document.getElementById("dateInput").value + ".png";
-
-  makeImageBlob(function(blob){
-    lastImgBlob = blob;
-    var file = new File([blob], fileName, { type: "image/png" });
-
-    // Jalur 1: Web Share API (HP / browser yang mendukung) — gambar + teks sekaligus
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], text: text, title: "Update Transaksi Livin' Food" })
-        .catch(function(){ /* dibatalkan user */ });
-      return;
-    }
-
-    // Jalur 2 (desktop): salin gambar ke clipboard + buka WA berisi teks
-    var openWA = function(){ window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank"); };
-    if (navigator.clipboard && window.ClipboardItem) {
-      navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]).then(function(){
-        alert("✅ Gambar tabel sudah disalin ke clipboard.\n\nWhatsApp akan terbuka berisi teks wording — setelah kirim teksnya, tinggal paste (Ctrl+V) gambar di chat yang sama.");
-        openWA();
-      }).catch(openWA);
-    } else {
-      openWA();
-    }
-  });
-}
-
-function copyImage(btn) {
-  if (!lastImgBlob) return;
-  if (navigator.clipboard && window.ClipboardItem) {
-    navigator.clipboard.write([new ClipboardItem({ "image/png": lastImgBlob })]).then(function(){
-      var old = btn.textContent;
-      btn.textContent = "✅ Tersalin!";
-      setTimeout(function(){ btn.textContent = old; }, 2000);
-    }).catch(function(){
-      alert("Gagal menyalin gambar. Gunakan tombol Download PNG lalu kirim manual.");
-    });
-  } else {
-    alert("Browser tidak mendukung salin gambar. Gunakan tombol Download PNG.");
-  }
-}
-
-function downloadImage() {
-  if (!lastImgBlob) return;
-  var a = document.createElement("a");
-  a.href = URL.createObjectURL(lastImgBlob);
-  a.download = "monitoring_livinfood_" + document.getElementById("dateInput").value + ".png";
-  a.click();
 }
 
 // ============================================================
